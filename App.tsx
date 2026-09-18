@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
   FlatList,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import TaskCard from './src/components/TaskCard';
 import TaskForm from './src/components/TaskForm';

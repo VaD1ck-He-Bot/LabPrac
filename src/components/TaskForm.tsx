@@ -7,18 +7,40 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Task, TaskPriority } from '../types/task';
+
+import { useTheme } from '../context/ThemeContext';
+import {
+  Task,
+  TaskPriority,
+} from '../types/task';
 
 interface TaskFormProps {
-  onAdd: (task: Task) => void;
+  initialTask?: Task;
+  onAdd?: (task: Task) => void;
+  onUpdate?: (task: Task) => void;
 }
 
-export default function TaskForm({ onAdd }: TaskFormProps) {
-  const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
-  const [priority, setPriority] = useState<TaskPriority>('medium');
+export default function TaskForm({
+  initialTask,
+  onAdd,
+  onUpdate,
+}: TaskFormProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
-  const handleAdd = () => {
+  const [title, setTitle] = useState(
+    initialTask?.title ?? ''
+  );
+
+  const [subject, setSubject] = useState(
+    initialTask?.subject ?? ''
+  );
+
+  const [priority, setPriority] = useState<TaskPriority>(
+    initialTask?.priority ?? 'medium'
+  );
+
+  const handleSave = () => {
     const trimmedTitle = title.trim();
     const trimmedSubject = subject.trim();
 
@@ -30,66 +52,113 @@ export default function TaskForm({ onAdd }: TaskFormProps) {
       return;
     }
 
-    const newTask: Task = {
-      id: String(Date.now()),
-      title: trimmedTitle,
-      subject: trimmedSubject,
-      priority,
-      isCompleted: false,
-    };
+    if (initialTask && onUpdate) {
+      const updatedTask: Task = {
+        ...initialTask,
+        title: trimmedTitle,
+        subject: trimmedSubject,
+        priority,
+      };
 
-    onAdd(newTask);
+      onUpdate(updatedTask);
+    } else if (onAdd) {
+      const newTask: Task = {
+        id: String(Date.now()),
+        title: trimmedTitle,
+        subject: trimmedSubject,
+        priority,
+        isCompleted: false,
+      };
 
-    setTitle('');
-    setSubject('');
-    setPriority('medium');
+      onAdd(newTask);
+
+      setTitle('');
+      setSubject('');
+      setPriority('medium');
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Новая задача</Text>
+    <View
+      style={[
+        styles.container,
+        isDark && styles.darkContainer,
+      ]}
+    >
+      <Text
+        style={[
+          styles.heading,
+          isDark && styles.darkText,
+        ]}
+      >
+        {initialTask
+          ? 'Изменить задачу'
+          : 'Новая задача'}
+      </Text>
 
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          isDark && styles.darkInput,
+        ]}
         placeholder="Название задачи"
+        placeholderTextColor={isDark ? '#aaa' : '#999'}
         value={title}
         onChangeText={setTitle}
       />
 
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          isDark && styles.darkInput,
+        ]}
         placeholder="Предмет"
+        placeholderTextColor={isDark ? '#aaa' : '#999'}
         value={subject}
         onChangeText={setSubject}
       />
 
-      <Text style={styles.label}>Приоритет</Text>
+      <Text
+        style={[
+          styles.label,
+          isDark && styles.darkText,
+        ]}
+      >
+        Приоритет
+      </Text>
 
       <View style={styles.priorityRow}>
         <PriorityButton
           title="Низкий"
-          value="low"
           selected={priority === 'low'}
           onPress={() => setPriority('low')}
+          isDark={isDark}
         />
 
         <PriorityButton
           title="Средний"
-          value="medium"
           selected={priority === 'medium'}
           onPress={() => setPriority('medium')}
+          isDark={isDark}
         />
 
         <PriorityButton
           title="Высокий"
-          value="high"
           selected={priority === 'high'}
           onPress={() => setPriority('high')}
+          isDark={isDark}
         />
       </View>
 
-      <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
-        <Text style={styles.addButtonText}>+ Добавить задачу</Text>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleSave}
+      >
+        <Text style={styles.addButtonText}>
+          {initialTask
+            ? 'Сохранить изменения'
+            : '+ Добавить задачу'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -97,20 +166,22 @@ export default function TaskForm({ onAdd }: TaskFormProps) {
 
 interface PriorityButtonProps {
   title: string;
-  value: TaskPriority;
   selected: boolean;
   onPress: () => void;
+  isDark: boolean;
 }
 
 function PriorityButton({
   title,
   selected,
   onPress,
+  isDark,
 }: PriorityButtonProps) {
   return (
     <TouchableOpacity
       style={[
         styles.priorityButton,
+        isDark && styles.darkPriorityButton,
         selected && styles.selectedPriority,
       ]}
       onPress={onPress}
@@ -118,6 +189,7 @@ function PriorityButton({
       <Text
         style={[
           styles.priorityText,
+          isDark && styles.darkText,
           selected && styles.selectedPriorityText,
         ]}
       >
@@ -137,10 +209,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  darkContainer: {
+    backgroundColor: '#333',
+    borderColor: '#555',
+  },
+
   heading: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
+  },
+
+  darkText: {
+    color: '#fff',
   },
 
   input: {
@@ -149,6 +230,14 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 15,
     marginBottom: 10,
+    color: '#000',
+    backgroundColor: '#fff',
+  },
+
+  darkInput: {
+    backgroundColor: '#444',
+    borderColor: '#666',
+    color: '#fff',
   },
 
   label: {
@@ -169,6 +258,12 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     padding: 9,
     alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+
+  darkPriorityButton: {
+    backgroundColor: '#444',
+    borderColor: '#666',
   },
 
   selectedPriority: {
@@ -178,6 +273,7 @@ const styles = StyleSheet.create({
 
   priorityText: {
     fontSize: 13,
+    color: '#000',
   },
 
   selectedPriorityText: {

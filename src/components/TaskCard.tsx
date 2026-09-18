@@ -1,4 +1,13 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+
+import { useTheme } from '../context/ThemeContext';
 import { Task } from '../types/task';
 
 interface TaskCardProps {
@@ -12,33 +21,84 @@ export default function TaskCard({
   onToggle,
   onDelete,
 }: TaskCardProps) {
+
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   return (
-    <View style={[styles.card, task.isCompleted && styles.completedCard]}>
+    <View
+      style={[
+        styles.card,
+        isDark && styles.darkCard,
+        task.isCompleted && styles.completedCard,
+      ]}
+    >
       <View style={styles.content}>
-        <Text style={[styles.title, task.isCompleted && styles.completedTitle]}>
+        <Text
+          style={[
+            styles.title,
+            isDark && styles.darkText,
+            task.isCompleted && styles.completedTitle,
+          ]}
+        >
           {task.title}
         </Text>
 
-        <Text style={styles.subject}>{task.subject}</Text>
+        <Text
+          style={[
+            styles.subject,
+            isDark && styles.darkText,
+          ]}
+        >
+          {task.subject}
+        </Text>
 
         <View style={styles.infoRow}>
-          <Text style={styles.priority}>
+          <Text
+            style={[
+              styles.priority,
+              isDark && styles.darkText,
+            ]}
+          >
             Приоритет: {getPriorityName(task.priority)}
           </Text>
 
-          <Text style={styles.status}>
-            {task.isCompleted ? 'Выполнено' : 'В процессе'}
+          <Text
+            style={[
+              styles.status,
+              isDark && styles.darkText,
+            ]}
+          >
+            {task.isCompleted
+              ? 'Выполнено'
+              : 'В процессе'}
           </Text>
         </View>
       </View>
 
       <View style={styles.buttons}>
+
+        <TouchableOpacity
+          style={styles.detailsButton}
+          onPress={() =>
+            router.push({
+              pathname: '/task/[id]',
+              params: { id: task.id },
+            })
+          }
+        >
+          <Text style={styles.buttonText}>
+            Подробнее
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.completeButton}
           onPress={() => onToggle(task.id)}
         >
           <Text style={styles.buttonText}>
-            {task.isCompleted ? '↩ Вернуть' : '✓ Выполнить'}
+            {task.isCompleted
+              ? '↩ Вернуть'
+              : '✓ Выполнить'}
           </Text>
         </TouchableOpacity>
 
@@ -46,19 +106,26 @@ export default function TaskCard({
           style={styles.deleteButton}
           onPress={() => onDelete(task.id)}
         >
-          <Text style={styles.buttonText}>Удалить</Text>
+          <Text style={styles.buttonText}>
+            Удалить
+          </Text>
         </TouchableOpacity>
+
       </View>
     </View>
   );
 }
 
-function getPriorityName(priority: Task['priority']) {
+function getPriorityName(
+  priority: Task['priority']
+) {
   switch (priority) {
     case 'low':
       return 'Низкий';
+
     case 'medium':
       return 'Средний';
+
     case 'high':
       return 'Высокий';
   }
@@ -114,7 +181,14 @@ const styles = StyleSheet.create({
 
   buttons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
+  },
+
+  detailsButton: {
+    flex: 1,
+    backgroundColor: '#777',
+    padding: 9,
+    alignItems: 'center',
   },
 
   completeButton: {
@@ -133,6 +207,15 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 13,
+  },
+
+  darkCard: {
+    backgroundColor: '#333',
+    borderColor: '#555',
+  },
+
+  darkText: {
+    color: '#fff',
   },
 });

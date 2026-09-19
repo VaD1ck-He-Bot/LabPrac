@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "campus-planner",
+    "scheme": "campusplanner",
     "slug": "campus-planner",
     "version": "1.0.0",
     "orientation": "portrait",

@@ -6,38 +6,49 @@ import {
   View,
 } from 'react-native';
 
-
+import { useTasks } from '../hooks/useTasks';
 import { useTheme } from '../context/ThemeContext';
+import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
 import { Task } from '../types/task';
 
 interface TaskCardProps {
   task: Task;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
 }
 
 export default function TaskCard({
   task,
-  onToggle,
-  onDelete,
 }: TaskCardProps) {
+  const {
+    toggleTaskStatus,
+    removeTask,
+  } = useTasks();
 
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const themeColors = colors[theme];
+
+  const isCompleted =
+    task.status === 'completed';
+
   return (
     <View
       style={[
         styles.card,
-        isDark && styles.darkCard,
-        task.isCompleted && styles.completedCard,
+        {
+          backgroundColor: themeColors.surface,
+          borderColor: themeColors.border,
+        },
+        isCompleted && styles.completedCard,
       ]}
     >
       <View style={styles.content}>
         <Text
           style={[
             styles.title,
-            isDark && styles.darkText,
-            task.isCompleted && styles.completedTitle,
+            {
+              color: themeColors.text,
+            },
+            isCompleted && styles.completedTitle,
           ]}
         >
           {task.title}
@@ -46,7 +57,9 @@ export default function TaskCard({
         <Text
           style={[
             styles.subject,
-            isDark && styles.darkText,
+            {
+              color: themeColors.secondaryText,
+            },
           ]}
         >
           {task.subject}
@@ -55,20 +68,25 @@ export default function TaskCard({
         <View style={styles.infoRow}>
           <Text
             style={[
-              styles.priority,
-              isDark && styles.darkText,
+              styles.infoText,
+              {
+                color: themeColors.secondaryText,
+              },
             ]}
           >
-            Приоритет: {getPriorityName(task.priority)}
+            Приоритет:{' '}
+            {getPriorityName(task.priority)}
           </Text>
 
           <Text
             style={[
-              styles.status,
-              isDark && styles.darkText,
+              styles.infoText,
+              {
+                color: themeColors.secondaryText,
+              },
             ]}
           >
-            {task.isCompleted
+            {isCompleted
               ? 'Выполнено'
               : 'В процессе'}
           </Text>
@@ -76,41 +94,84 @@ export default function TaskCard({
       </View>
 
       <View style={styles.buttons}>
-
         <TouchableOpacity
-          style={styles.detailsButton}
+          style={[
+            styles.button,
+            {
+              backgroundColor:
+                themeColors.secondary,
+            },
+          ]}
           onPress={() =>
             router.push({
               pathname: '/task/[id]',
-              params: { id: task.id },
+              params: {
+                id: task.id,
+              },
             })
           }
         >
-          <Text style={styles.buttonText}>
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: themeColors.onPrimary,
+              },
+            ]}
+          >
             Подробнее
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.completeButton}
-          onPress={() => onToggle(task.id)}
+          style={[
+            styles.button,
+            {
+              backgroundColor:
+                themeColors.primary,
+            },
+          ]}
+          onPress={() =>
+            toggleTaskStatus(task.id)
+          }
         >
-          <Text style={styles.buttonText}>
-            {task.isCompleted
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: themeColors.onPrimary,
+              },
+            ]}
+          >
+            {isCompleted
               ? '↩ Вернуть'
               : '✓ Выполнить'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => onDelete(task.id)}
+          style={[
+            styles.button,
+            {
+              backgroundColor:
+                themeColors.secondary,
+            },
+          ]}
+          onPress={() =>
+            removeTask(task.id)
+          }
         >
-          <Text style={styles.buttonText}>
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: themeColors.onPrimary,
+              },
+            ]}
+          >
             Удалить
           </Text>
         </TouchableOpacity>
-
       </View>
     </View>
   );
@@ -133,11 +194,9 @@ function getPriorityName(
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    marginBottom: 10,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   completedCard: {
@@ -145,13 +204,13 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
 
   title: {
     fontSize: 17,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
 
   completedTitle: {
@@ -160,8 +219,7 @@ const styles = StyleSheet.create({
 
   subject: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
 
   infoRow: {
@@ -170,52 +228,22 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
 
-  priority: {
-    fontSize: 13,
-    color: '#555',
-  },
-
-  status: {
+  infoText: {
     fontSize: 13,
   },
 
   buttons: {
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.xs,
   },
 
-  detailsButton: {
+  button: {
     flex: 1,
-    backgroundColor: '#777',
-    padding: 9,
-    alignItems: 'center',
-  },
-
-  completeButton: {
-    flex: 1,
-    backgroundColor: '#555',
-    padding: 9,
-    alignItems: 'center',
-  },
-
-  deleteButton: {
-    flex: 1,
-    backgroundColor: '#999',
-    padding: 9,
+    padding: spacing.sm,
     alignItems: 'center',
   },
 
   buttonText: {
-    color: '#fff',
     fontSize: 13,
-  },
-
-  darkCard: {
-    backgroundColor: '#333',
-    borderColor: '#555',
-  },
-
-  darkText: {
-    color: '#fff',
   },
 });

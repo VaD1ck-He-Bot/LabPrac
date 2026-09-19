@@ -1,191 +1,148 @@
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { router } from 'expo-router';
+
+import TaskCard from '../src/components/TaskCard';
+import { useTasks } from '../src/hooks/useTasks';
+import Screen from '../src/components/ui/Screen';
+import EmptyState from '../src/components/ui/EmptyState';
+import AppButton from '../src/components/ui/AppButton';
 
 import { useTheme } from '../src/context/ThemeContext';
-import { router } from 'expo-router';
-import TaskCard from '../src/components/TaskCard';
-import { useTasks } from '../src/context/TaskContext';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
+
+import {
+  getActiveTaskCount,
+  getCompletedTaskCount,
+} from '../src/utils/task';
 
 export default function Index() {
-    const {
-        tasks,
-        toggleTask,
-        deleteTask,
-    } = useTasks();
+  const { tasks } = useTasks();
 
-    const completedCount = tasks.filter(
-        (task) => task.isCompleted
-    ).length;
+  const { theme } = useTheme();
+  const themeColors = colors[theme];
 
-    const { theme } = useTheme();
+  const activeCount =
+    getActiveTaskCount(tasks);
 
-    const isDark = theme === 'dark';
+  const completedCount =
+    getCompletedTaskCount(tasks);
 
-    return (
-        <SafeAreaView
+  return (
+    <Screen>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text
             style={[
-                styles.safeArea,
-                isDark && styles.darkBackground,
+              styles.subtitle,
+              {
+                color: themeColors.text,
+              },
             ]}
-            edges={['left', 'right', 'bottom']}
-        >
-            <View style={styles.container}>
+          >
+            Учебные задачи на сегодня
+          </Text>
 
-                <View style={styles.header}>
+          <View style={styles.stats}>
+            <Text
+              style={[
+                styles.statText,
+                {
+                  color: themeColors.secondaryText,
+                },
+              ]}
+            >
+              Всего: {tasks.length}
+            </Text>
 
+            <Text
+              style={[
+                styles.statText,
+                {
+                  color: themeColors.secondaryText,
+                },
+              ]}
+            >
+              Активных: {activeCount}
+            </Text>
 
-                    <Text
-                        style={[
-                            styles.subtitle,
-                            isDark && styles.darkText,
-                        ]}
-                    >
-                        Учебные задачи на сегодня
-                    </Text>
+            <Text
+              style={[
+                styles.statText,
+                {
+                  color: themeColors.secondaryText,
+                },
+              ]}
+            >
+              Выполнено: {completedCount}
+            </Text>
+          </View>
+        </View>
 
-                    <View style={styles.stats}>
-                        <Text
-                            style={[
-                                styles.statText,
-                                isDark && styles.darkText,
-                            ]}
-                        >
-                            Всего: {tasks.length}
-                        </Text>
+        <FlatList
+          data={tasks}
+          renderItem={({ item }) => (
+            <TaskCard task={item} />
+          )}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={
+            <EmptyState
+              title="Задач пока нет"
+              description="Добавьте первую учебную задачу."
+              actionLabel="Добавить задачу"
+              onAction={() =>
+                router.push('/task/new')
+              }
+            />
+          }
+          contentContainerStyle={
+            styles.listContent
+          }
+        />
 
-                        <Text
-                            style={[
-                                styles.statText,
-                                isDark && styles.darkText,
-                            ]}
-                        >
-                            Выполнено: {completedCount}
-                        </Text>
-                    </View>
-                </View>
-
-                <FlatList
-                    data={tasks}
-                    renderItem={({ item }) => (
-                        <TaskCard
-                            task={item}
-                            onToggle={toggleTask}
-                            onDelete={deleteTask}
-                        />
-                    )}
-                    keyExtractor={(item) => item.id}
-                    ListEmptyComponent={
-                        <Text style={styles.emptyText}>
-                            Список пока пуст
-                        </Text>
-                    }
-                    contentContainerStyle={styles.listContent}
-                />
-
-                <TouchableOpacity
-                    style={styles.floatingButton}
-                    onPress={() => router.push('/task/new')}
-                >
-                    <Text style={styles.floatingButtonText}>
-                        +
-                    </Text>
-                </TouchableOpacity>
-
-            </View>
-        </SafeAreaView>
-    );
+        <AppButton
+          title="+ Добавить задачу"
+          onPress={() =>
+            router.push('/task/new')
+          }
+        />
+      </View>
+    </Screen>
+  );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
+  container: {
+    flex: 1,
+    padding: spacing.md,
+  },
 
-    container: {
-        flex: 1,
-    },
+  header: {
+    marginBottom: spacing.md,
+  },
 
-    header: {
-        padding: 12,
-        paddingBottom: 4,
-    },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: spacing.sm,
+  },
 
-    headerTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
+  stats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
 
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
+  statText: {
+    fontSize: 14,
+  },
 
-    menuButton: {
-        fontSize: 28,
-        paddingHorizontal: 8,
-    },
-
-    subtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 2,
-    },
-
-    stats: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 8,
-    },
-
-    statText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-
-    listContent: {
-        padding: 12,
-        paddingTop: 6,
-        flexGrow: 1,
-    },
-
-    emptyText: {
-        textAlign: 'center',
-        color: '#777',
-        fontSize: 15,
-        marginTop: 30,
-    },
-
-    floatingButton: {
-        position: 'absolute',
-        right: 20,
-        bottom: 20,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#555',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    floatingButtonText: {
-        color: '#fff',
-        fontSize: 32,
-        fontWeight: '300',
-    },
-
-    darkBackground: {
-        backgroundColor: '#222',
-    },
-
-    darkText: {
-        color: '#fff',
-    },
+  listContent: {
+    paddingBottom: spacing.sm,
+  },
 });

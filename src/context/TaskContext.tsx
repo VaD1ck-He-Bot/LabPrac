@@ -1,12 +1,29 @@
-import { createContext, useContext, useState } from 'react';
-import { Task } from '../types/task';
+import {
+  createContext,
+  useState,
+} from 'react';
 
-interface TaskContextType {
+import {
+  CreateTaskInput,
+  Task,
+  UpdateTaskInput,
+} from '../types/task';
+
+interface TasksContextType {
   tasks: Task[];
-  addTask: (task: Task) => void;
-  toggleTask: (id: string) => void;
-  deleteTask: (id: string) => void;
-  updateTask: (task: Task) => void;
+
+  createTask: (input: CreateTaskInput) => void;
+
+  updateTask: (
+    id: string,
+    input: UpdateTaskInput
+  ) => void;
+
+  removeTask: (id: string) => void;
+
+  toggleTaskStatus: (id: string) => void;
+
+  getTaskById: (id: string) => Task | undefined;
 }
 
 const initialTasks: Task[] = [
@@ -15,87 +32,118 @@ const initialTasks: Task[] = [
     title: 'Сделать лабораторную №1',
     subject: 'Разработка мобильных приложений',
     priority: 'high',
-    isCompleted: false,
+    status: 'active',
+    createdAt: new Date().toISOString(),
   },
   {
     id: '2',
     title: 'Прочитать главу 5',
     subject: 'Базы данных',
     priority: 'medium',
-    isCompleted: false,
+    status: 'active',
+    createdAt: new Date().toISOString(),
   },
   {
     id: '3',
     title: 'Подготовить презентацию',
     subject: 'Компьютерные сети',
     priority: 'high',
-    isCompleted: true,
+    status: 'completed',
+    createdAt: new Date().toISOString(),
   },
   {
     id: '4',
     title: 'Повторить TypeScript',
     subject: 'Программирование',
     priority: 'low',
-    isCompleted: false,
+    status: 'active',
+    createdAt: new Date().toISOString(),
   },
 ];
 
-const TaskContext = createContext<TaskContextType | undefined>(
-  undefined
-);
+export const TasksContext = createContext<
+  TasksContextType | undefined
+>(undefined);
 
-export function TaskProvider({ children }: { children: React.ReactNode }) {
+export function TasksProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
-  const addTask = (task: Task) => {
-    setTasks((currentTasks) => [task, ...currentTasks]);
+  const createTask = (input: CreateTaskInput) => {
+    const newTask: Task = {
+      ...input,
+      id: String(Date.now()),
+      createdAt: new Date().toISOString(),
+      status: 'active',
+    };
+
+    setTasks((currentTasks) => [
+      newTask,
+      ...currentTasks,
+    ]);
   };
 
-  const toggleTask = (id: string) => {
+  const updateTask = (
+    id: string,
+    input: UpdateTaskInput
+  ) => {
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
         task.id === id
-          ? { ...task, isCompleted: !task.isCompleted }
+          ? {
+              ...task,
+              ...input,
+            }
           : task
       )
     );
   };
 
-  const deleteTask = (id: string) => {
+  const removeTask = (id: string) => {
     setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== id)
-    );
-  };
-
-  const updateTask = (updatedTask: Task) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === updatedTask.id ? updatedTask : task
+      currentTasks.filter(
+        (task) => task.id !== id
       )
     );
   };
 
+  const toggleTaskStatus = (id: string) => {
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              status:
+                task.status === 'active'
+                  ? 'completed'
+                  : 'active',
+            }
+          : task
+      )
+    );
+  };
+
+  const getTaskById = (id: string) => {
+    return tasks.find(
+      (task) => task.id === id
+    );
+  };
+
   return (
-    <TaskContext.Provider
+    <TasksContext.Provider
       value={{
         tasks,
-        addTask,
-        toggleTask,
-        deleteTask,
+        createTask,
         updateTask,
+        removeTask,
+        toggleTaskStatus,
+        getTaskById,
       }}
     >
       {children}
-    </TaskContext.Provider>
+    </TasksContext.Provider>
   );
-}
-
-export function useTasks() {
-  const context = useContext(TaskContext);
-
-  if (!context) {
-    throw new Error('useTasks must be used inside TaskProvider');
-  }
-
-  return context;
 }

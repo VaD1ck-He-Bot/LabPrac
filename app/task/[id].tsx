@@ -1,71 +1,65 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import {
+  router,
+  useLocalSearchParams,
+} from 'expo-router';
+
 import {
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useTasks } from '../../src/context/TaskContext';
+import { useTasks } from '../../src/hooks/useTasks';
+
+import Screen from '../../src/components/ui/Screen';
+import AppButton from '../../src/components/ui/AppButton';
+import EmptyState from '../../src/components/ui/EmptyState';
+
 import { useTheme } from '../../src/context/ThemeContext';
+import { colors } from '../../src/theme/colors';
+import { spacing } from '../../src/theme/spacing';
 
 export default function TaskDetails() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } =
+    useLocalSearchParams<{
+      id: string;
+    }>();
 
-  const { tasks, toggleTask } = useTasks();
+  const {
+    getTaskById,
+    toggleTaskStatus,
+  } = useTasks();
+
   const { theme } = useTheme();
+  const themeColors = colors[theme];
 
-  const isDark = theme === 'dark';
-
-  const task = tasks.find((item) => item.id === id);
+  const task = getTaskById(id);
 
   if (!task) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          isDark && styles.darkBackground,
-        ]}
-        edges={['left', 'right', 'bottom']}
-      >
-        <View style={styles.container}>
-          <Text
-            style={[
-              styles.title,
-              isDark && styles.darkText,
-            ]}
-          >
-            Задача не найдена
-          </Text>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.buttonText}>
-              Назад
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <Screen>
+        <EmptyState
+          title="Задача не найдена"
+          description="Возможно, задача была удалена."
+          actionLabel="Назад"
+          onAction={() => router.back()}
+        />
+      </Screen>
     );
   }
 
-  return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        isDark && styles.darkBackground,
-      ]}
-      edges={['left', 'right', 'bottom']}
-    >
-      <View style={styles.container}>
+  const isCompleted =
+    task.status === 'completed';
 
+  return (
+    <Screen>
+      <View style={styles.container}>
         <Text
           style={[
             styles.title,
-            isDark && styles.darkText,
+            {
+              color: themeColors.text,
+            },
           ]}
         >
           {task.title}
@@ -74,7 +68,9 @@ export default function TaskDetails() {
         <Text
           style={[
             styles.label,
-            isDark && styles.darkText,
+            {
+              color: themeColors.secondaryText,
+            },
           ]}
         >
           Предмет:
@@ -83,7 +79,9 @@ export default function TaskDetails() {
         <Text
           style={[
             styles.value,
-            isDark && styles.darkText,
+            {
+              color: themeColors.text,
+            },
           ]}
         >
           {task.subject}
@@ -92,7 +90,9 @@ export default function TaskDetails() {
         <Text
           style={[
             styles.label,
-            isDark && styles.darkText,
+            {
+              color: themeColors.secondaryText,
+            },
           ]}
         >
           Приоритет:
@@ -101,7 +101,9 @@ export default function TaskDetails() {
         <Text
           style={[
             styles.value,
-            isDark && styles.darkText,
+            {
+              color: themeColors.text,
+            },
           ]}
         >
           {getPriorityName(task.priority)}
@@ -110,7 +112,9 @@ export default function TaskDetails() {
         <Text
           style={[
             styles.label,
-            isDark && styles.darkText,
+            {
+              color: themeColors.secondaryText,
+            },
           ]}
         >
           Статус:
@@ -119,41 +123,44 @@ export default function TaskDetails() {
         <Text
           style={[
             styles.value,
-            isDark && styles.darkText,
+            {
+              color: themeColors.text,
+            },
           ]}
         >
-          {task.isCompleted
+          {isCompleted
             ? 'Выполнено'
             : 'В процессе'}
         </Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => toggleTask(task.id)}
-        >
-          <Text style={styles.buttonText}>
-            {task.isCompleted
-              ? 'Вернуть в работу'
-              : 'Выполнить'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttons}>
+          <AppButton
+            title={
+              isCompleted
+                ? 'Вернуть в работу'
+                : 'Выполнить'
+            }
+            onPress={() =>
+              toggleTaskStatus(task.id)
+            }
+          />
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>
-            router.push({
-              pathname: '/task/edit/[id]',
-              params: { id: task.id },
-            })
-          }
-        >
-          <Text style={styles.buttonText}>
-            Редактировать
-          </Text>
-        </TouchableOpacity>
-
+          <AppButton
+            title="Редактировать"
+            variant="secondary"
+            onPress={() =>
+              router.push({
+                pathname:
+                  '/task/edit/[id]',
+                params: {
+                  id: task.id,
+                },
+              })
+            }
+          />
+        </View>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -173,51 +180,28 @@ function getPriorityName(
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-
-  darkBackground: {
-    backgroundColor: '#222',
-  },
-
   container: {
-    flex: 1,
-    padding: 12,
+    padding: spacing.lg,
   },
 
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
 
   label: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginTop: 12,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
 
   value: {
     fontSize: 16,
-    marginTop: 4,
   },
 
-  darkText: {
-    color: '#fff',
-  },
-
-  button: {
-    backgroundColor: '#555',
-    padding: 11,
-    alignItems: 'center',
-    marginTop: 15,
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
+  buttons: {
+    marginTop: spacing.xl,
   },
 });

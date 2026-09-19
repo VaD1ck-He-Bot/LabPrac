@@ -3,102 +3,58 @@ import {
   useLocalSearchParams,
 } from 'expo-router';
 
-import {
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
 
 import TaskForm from '../../../src/components/TaskForm';
-import { useTasks } from '../../../src/context/TaskContext';
-import { useTheme } from '../../../src/context/ThemeContext';
+import { useTasks } from '../../../src/hooks/useTasks';
+import Screen from '../../../src/components/ui/Screen';
+import EmptyState from '../../../src/components/ui/EmptyState';
 
 export default function EditTask() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { tasks, updateTask } = useTasks();
-  const { theme } = useTheme();
+  const {
+    getTaskById,
+    updateTask,
+  } = useTasks();
 
-  const isDark = theme === 'dark';
-
-  const task = tasks.find(
-    (item) => item.id === id
-  );
+  const task = getTaskById(id);
 
   if (!task) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          isDark && styles.darkBackground,
-        ]}
-        edges={['left', 'right', 'bottom']}
-      >
-        <View style={styles.container}>
-
-          <Text
-            style={[
-              styles.title,
-              isDark && styles.darkText,
-            ]}
-          >
-            Задача не найдена
-          </Text>
-
-        </View>
-      </SafeAreaView>
+      <Screen>
+        <EmptyState
+          title="Задача не найдена"
+          description="Возможно, задача была удалена."
+          actionLabel="Назад"
+          onAction={() => router.back()}
+        />
+      </Screen>
     );
   }
 
-  const handleUpdateTask = (updatedTask: typeof task) => {
-    updateTask(updatedTask);
+  const handleUpdateTask = (
+    input: Parameters<typeof updateTask>[1]
+  ) => {
+    updateTask(task.id, input);
     router.back();
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        isDark && styles.darkBackground,
-      ]}
-      edges={['left', 'right', 'bottom']}
-    >
+    <Screen>
       <View style={styles.container}>
-
         <TaskForm
           initialTask={task}
           onUpdate={handleUpdateTask}
         />
-
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-
-  darkBackground: {
-    backgroundColor: '#222',
-  },
-
   container: {
     flex: 1,
     padding: 12,
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-
-  darkText: {
-    color: '#fff',
   },
 });

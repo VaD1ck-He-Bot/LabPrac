@@ -4,7 +4,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-import { TaskProvider } from '../src/context/TaskContext';
+import { TasksProvider } from '../src/context/TaskContext';
 import {
   ThemeProvider,
   useTheme,
@@ -13,9 +13,9 @@ import {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <TaskProvider>
+      <TasksProvider>
         <AppStack />
-      </TaskProvider>
+      </TasksProvider>
     </ThemeProvider>
   );
 }

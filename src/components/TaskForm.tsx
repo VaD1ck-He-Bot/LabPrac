@@ -1,23 +1,29 @@
 import { useState } from 'react';
 import {
-  Alert,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 
 import { useTheme } from '../context/ThemeContext';
+import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
+
 import {
+  CreateTaskInput,
   Task,
   TaskPriority,
+  UpdateTaskInput,
 } from '../types/task';
+
+import AppButton from './ui/AppButton';
+import AppInput from './ui/AppInput';
 
 interface TaskFormProps {
   initialTask?: Task;
-  onAdd?: (task: Task) => void;
-  onUpdate?: (task: Task) => void;
+  onAdd?: (input: CreateTaskInput) => void;
+  onUpdate?: (input: UpdateTaskInput) => void;
 }
 
 export default function TaskForm({
@@ -26,7 +32,7 @@ export default function TaskForm({
   onUpdate,
 }: TaskFormProps) {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const themeColors = colors[theme];
 
   const [title, setTitle] = useState(
     initialTask?.title ?? ''
@@ -36,41 +42,38 @@ export default function TaskForm({
     initialTask?.subject ?? ''
   );
 
-  const [priority, setPriority] = useState<TaskPriority>(
-    initialTask?.priority ?? 'medium'
-  );
+  const [priority, setPriority] =
+    useState<TaskPriority>(
+      initialTask?.priority ?? 'medium'
+    );
 
   const handleSave = () => {
     const trimmedTitle = title.trim();
     const trimmedSubject = subject.trim();
 
     if (!trimmedTitle || !trimmedSubject) {
-      Alert.alert(
-        'Ошибка',
-        'Введите название задачи и название предмета.'
-      );
       return;
     }
 
     if (initialTask && onUpdate) {
-      const updatedTask: Task = {
-        ...initialTask,
+      const updateInput: UpdateTaskInput = {
         title: trimmedTitle,
         subject: trimmedSubject,
         priority,
       };
 
-      onUpdate(updatedTask);
-    } else if (onAdd) {
-      const newTask: Task = {
-        id: String(Date.now()),
+      onUpdate(updateInput);
+      return;
+    }
+
+    if (onAdd) {
+      const input: CreateTaskInput = {
         title: trimmedTitle,
         subject: trimmedSubject,
         priority,
-        isCompleted: false,
       };
 
-      onAdd(newTask);
+      onAdd(input);
 
       setTitle('');
       setSubject('');
@@ -82,13 +85,18 @@ export default function TaskForm({
     <View
       style={[
         styles.container,
-        isDark && styles.darkContainer,
+        {
+          backgroundColor: themeColors.surface,
+          borderColor: themeColors.border,
+        },
       ]}
     >
       <Text
         style={[
           styles.heading,
-          isDark && styles.darkText,
+          {
+            color: themeColors.text,
+          },
         ]}
       >
         {initialTask
@@ -96,24 +104,16 @@ export default function TaskForm({
           : 'Новая задача'}
       </Text>
 
-      <TextInput
-        style={[
-          styles.input,
-          isDark && styles.darkInput,
-        ]}
+      <AppInput
+        label="Название задачи"
         placeholder="Название задачи"
-        placeholderTextColor={isDark ? '#aaa' : '#999'}
         value={title}
         onChangeText={setTitle}
       />
 
-      <TextInput
-        style={[
-          styles.input,
-          isDark && styles.darkInput,
-        ]}
-        placeholder="Предмет"
-        placeholderTextColor={isDark ? '#aaa' : '#999'}
+      <AppInput
+        label="Предмет"
+        placeholder="Название предмета"
         value={subject}
         onChangeText={setSubject}
       />
@@ -121,7 +121,9 @@ export default function TaskForm({
       <Text
         style={[
           styles.label,
-          isDark && styles.darkText,
+          {
+            color: themeColors.text,
+          },
         ]}
       >
         Приоритет
@@ -132,34 +134,29 @@ export default function TaskForm({
           title="Низкий"
           selected={priority === 'low'}
           onPress={() => setPriority('low')}
-          isDark={isDark}
         />
 
         <PriorityButton
           title="Средний"
           selected={priority === 'medium'}
           onPress={() => setPriority('medium')}
-          isDark={isDark}
         />
 
         <PriorityButton
           title="Высокий"
           selected={priority === 'high'}
           onPress={() => setPriority('high')}
-          isDark={isDark}
         />
       </View>
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleSave}
-      >
-        <Text style={styles.addButtonText}>
-          {initialTask
+      <AppButton
+        title={
+          initialTask
             ? 'Сохранить изменения'
-            : '+ Добавить задачу'}
-        </Text>
-      </TouchableOpacity>
+            : '+ Добавить задачу'
+        }
+        onPress={handleSave}
+      />
     </View>
   );
 }
@@ -168,29 +165,40 @@ interface PriorityButtonProps {
   title: string;
   selected: boolean;
   onPress: () => void;
-  isDark: boolean;
 }
 
 function PriorityButton({
   title,
   selected,
   onPress,
-  isDark,
 }: PriorityButtonProps) {
+  const { theme } = useTheme();
+  const themeColors = colors[theme];
+
   return (
     <TouchableOpacity
       style={[
         styles.priorityButton,
-        isDark && styles.darkPriorityButton,
-        selected && styles.selectedPriority,
+        {
+          backgroundColor:
+            themeColors.inputBackground,
+          borderColor: themeColors.border,
+        },
+        selected && {
+          backgroundColor: themeColors.primary,
+          borderColor: themeColors.primary,
+        },
       ]}
       onPress={onPress}
     >
       <Text
         style={[
           styles.priorityText,
-          isDark && styles.darkText,
-          selected && styles.selectedPriorityText,
+          {
+            color: selected
+              ? themeColors.onPrimary
+              : themeColors.text,
+          },
         ]}
       >
         {title}
@@ -201,95 +209,38 @@ function PriorityButton({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 20,
-  },
-
-  darkContainer: {
-    backgroundColor: '#333',
-    borderColor: '#555',
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
 
   heading: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
-  },
-
-  darkText: {
-    color: '#fff',
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    fontSize: 15,
-    marginBottom: 10,
-    color: '#000',
-    backgroundColor: '#fff',
-  },
-
-  darkInput: {
-    backgroundColor: '#444',
-    borderColor: '#666',
-    color: '#fff',
+    marginBottom: spacing.md,
   },
 
   label: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
 
   priorityRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 12,
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
 
   priorityButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 9,
+    padding: spacing.sm,
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-
-  darkPriorityButton: {
-    backgroundColor: '#444',
-    borderColor: '#666',
-  },
-
-  selectedPriority: {
-    backgroundColor: '#555',
-    borderColor: '#555',
   },
 
   priorityText: {
     fontSize: 13,
-    color: '#000',
-  },
-
-  selectedPriorityText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-
-  addButton: {
-    backgroundColor: '#555',
-    padding: 11,
-    alignItems: 'center',
-  },
-
-  addButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
   },
 });

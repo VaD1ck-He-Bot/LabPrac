@@ -1,59 +1,32 @@
 import { router } from 'expo-router';
-import {
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
+import Screen from '../../src/components/ui/Screen';
 import TaskForm from '../../src/components/TaskForm';
-import { useTasks } from '../../src/context/TaskContext';
-import { useTheme } from '../../src/context/ThemeContext';
+import { useTasks } from '../../src/hooks/useTasks';
 
 export default function NewTask() {
-  const { addTask } = useTasks();
-  const { theme } = useTheme();
+  const { createTask } = useTasks();
 
-  const isDark = theme === 'dark';
-
-  const handleAddTask = (task: Parameters<typeof addTask>[0]) => {
-    addTask(task);
+  const handleAddTask = (
+    input: Parameters<typeof createTask>[0]
+  ) => {
+    createTask(input);
     router.back();
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        isDark && styles.darkBackground,
-      ]}
-      edges={['left', 'right', 'bottom']}
-    >
+    <Screen>
       <View style={styles.container}>
-
         <TaskForm onAdd={handleAddTask} />
-
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-
-  darkBackground: {
-    backgroundColor: '#222',
-  },
-
   container: {
     flex: 1,
     padding: 12,
-  },
-
-  darkText: {
-    color: '#fff',
   },
 });

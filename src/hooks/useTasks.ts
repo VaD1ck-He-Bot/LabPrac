@@ -7,7 +7,7 @@ export function useTasks() {
 
   if (!context) {
     throw new Error(
-      'useTasks must be used inside TasksProvider'
+      'useTasks должен быть использован в TasksProvider'
     );
   }
 

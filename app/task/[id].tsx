@@ -15,23 +15,15 @@ import Screen from '../../src/components/ui/Screen';
 import AppButton from '../../src/components/ui/AppButton';
 import EmptyState from '../../src/components/ui/EmptyState';
 
-import { useTheme } from '../../src/context/ThemeContext';
-import { colors } from '../../src/theme/colors';
-import { spacing } from '../../src/theme/spacing';
-
 export default function TaskDetails() {
-  const { id } =
-    useLocalSearchParams<{
-      id: string;
-    }>();
+  const { id } = useLocalSearchParams<{
+    id: string;
+  }>();
 
   const {
     getTaskById,
     toggleTaskStatus,
   } = useTasks();
-
-  const { theme } = useTheme();
-  const themeColors = colors[theme];
 
   const task = getTaskById(id);
 
@@ -54,80 +46,31 @@ export default function TaskDetails() {
   return (
     <Screen>
       <View style={styles.container}>
-        <Text
-          style={[
-            styles.title,
-            {
-              color: themeColors.text,
-            },
-          ]}
-        >
+        <Text style={styles.title}>
           {task.title}
         </Text>
 
-        <Text
-          style={[
-            styles.label,
-            {
-              color: themeColors.secondaryText,
-            },
-          ]}
-        >
+        <Text style={styles.label}>
           Предмет:
         </Text>
 
-        <Text
-          style={[
-            styles.value,
-            {
-              color: themeColors.text,
-            },
-          ]}
-        >
+        <Text style={styles.value}>
           {task.subject}
         </Text>
 
-        <Text
-          style={[
-            styles.label,
-            {
-              color: themeColors.secondaryText,
-            },
-          ]}
-        >
+        <Text style={styles.label}>
           Приоритет:
         </Text>
 
-        <Text
-          style={[
-            styles.value,
-            {
-              color: themeColors.text,
-            },
-          ]}
-        >
+        <Text style={styles.value}>
           {getPriorityName(task.priority)}
         </Text>
 
-        <Text
-          style={[
-            styles.label,
-            {
-              color: themeColors.secondaryText,
-            },
-          ]}
-        >
+        <Text style={styles.label}>
           Статус:
         </Text>
 
-        <Text
-          style={[
-            styles.value,
-            {
-              color: themeColors.text,
-            },
-          ]}
-        >
+        <Text style={styles.value}>
           {isCompleted
             ? 'Выполнено'
             : 'В процессе'}
@@ -181,20 +124,21 @@ function getPriorityName(
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.lg,
+    padding: 16,
   },
 
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: spacing.xl,
+    marginBottom: 24,
   },
 
   label: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    marginTop: 12,
+    marginBottom: 4,
+    color: '#666',
   },
 
   value: {
@@ -202,6 +146,6 @@ const styles = StyleSheet.create({
   },
 
   buttons: {
-    marginTop: spacing.xl,
+    marginTop: 24,
   },
 });

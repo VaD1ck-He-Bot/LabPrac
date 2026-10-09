@@ -7,11 +7,17 @@ import {
 
 import { router } from 'expo-router';
 
+import Animated, {
+  FadeInDown,
+  FadeOutUp,
+} from 'react-native-reanimated';
+
 import TaskCard from '../src/components/TaskCard';
 import { useTasks } from '../src/hooks/useTasks';
 import Screen from '../src/components/ui/Screen';
 import EmptyState from '../src/components/ui/EmptyState';
 import AppButton from '../src/components/ui/AppButton';
+import ProgressBar from '../src/components/ui/ProgressBar';
 
 import { useTheme } from '../src/context/ThemeContext';
 import { colors } from '../src/theme/colors';
@@ -84,11 +90,20 @@ export default function Index() {
             </Text>
           </View>
         </View>
+        <ProgressBar
+          completed={completedCount}
+          total={tasks.length}
+        />
 
         <FlatList
           data={tasks}
           renderItem={({ item }) => (
-            <TaskCard task={item} />
+            <Animated.View
+              entering={FadeInDown.duration(300)}
+              exiting={FadeOutUp.duration(250)}
+            >
+              <TaskCard task={item} />
+            </Animated.View>
           )}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={

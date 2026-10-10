@@ -3,6 +3,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { TasksProvider } from '../src/context/TaskContext';
 import {
@@ -12,11 +13,13 @@ import {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <TasksProvider>
-        <AppStack />
-      </TasksProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <TasksProvider>
+          <AppStack />
+        </TasksProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -31,9 +34,7 @@ function AppStack() {
         headerStyle: {
           backgroundColor: isDark ? '#333' : '#fff',
         },
-
         headerTintColor: isDark ? '#fff' : '#000',
-
         headerTitleStyle: {
           color: isDark ? '#fff' : '#000',
         },
@@ -43,7 +44,6 @@ function AppStack() {
         name="index"
         options={{
           title: 'Campus Planner',
-
           headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push('/settings')}
@@ -63,30 +63,22 @@ function AppStack() {
 
       <Stack.Screen
         name="task/new"
-        options={{
-          title: 'Новая задача',
-        }}
+        options={{ title: 'Новая задача' }}
       />
 
       <Stack.Screen
         name="task/[id]"
-        options={{
-          title: 'Задача',
-        }}
+        options={{ title: 'Задача' }}
       />
 
       <Stack.Screen
         name="task/edit/[id]"
-        options={{
-          title: 'Редактирование',
-        }}
+        options={{ title: 'Редактирование' }}
       />
 
       <Stack.Screen
         name="settings"
-        options={{
-          title: 'Настройки',
-        }}
+        options={{ title: 'Настройки' }}
       />
     </Stack>
   );

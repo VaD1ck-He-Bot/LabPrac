@@ -1,3 +1,4 @@
+
 import { router } from 'expo-router';
 import React from 'react';
 import {
@@ -22,11 +23,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useTasks } from '../hooks/useTasks';
+import { useTaskMutations } from '../hooks/useTaskMutations';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
-import { Task } from '../types/task';
+import type { Task } from '../types/task';
 
 interface TaskCardProps {
   task: Task;
@@ -35,97 +36,75 @@ interface TaskCardProps {
 const SWIPE_ACTION_THRESHOLD = 100;
 const MAX_SWIPE_DISTANCE = 140;
 
-export default function TaskCard({
-  task,
-}: TaskCardProps) {
-  const {
-    toggleTaskStatus,
-    removeTask,
-  } = useTasks();
+export default function TaskCard({ task }: TaskCardProps) {
+  const { updateMutation, deleteMutation } = useTaskMutations();
 
   const { theme } = useTheme();
   const themeColors = colors[theme];
 
-  const isCompleted =
-    task.status === 'completed';
+  const isCompleted = task.status === 'completed';
 
-  const statusAnimation = useSharedValue(
-    isCompleted ? 1 : 0
-  );
+  const statusAnimation = useSharedValue(isCompleted ? 1 : 0);
 
-  const animatedStatusStyle =
-    useAnimatedStyle(() => ({
-      transform: [
-        {
-          scale:
-            0.8 +
-            statusAnimation.value * 0.2,
-        },
-      ],
-      opacity:
-        0.6 +
-        statusAnimation.value * 0.4,
-    }));
+  const animatedStatusStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: 0.8 + statusAnimation.value * 0.2,
+      },
+    ],
+    opacity: 0.6 + statusAnimation.value * 0.4,
+  }));
 
-  // Раскрытие дополнительной информации
   const detailsAnimation = useSharedValue(0);
 
-  const animatedDetailsStyle =
-    useAnimatedStyle(() => ({
-      opacity: detailsAnimation.value,
-      maxHeight:
-        detailsAnimation.value * 200,
-    }));
+  const animatedDetailsStyle = useAnimatedStyle(() => ({
+    opacity: detailsAnimation.value,
+    maxHeight: detailsAnimation.value * 200,
+  }));
 
-  const [detailsVisible, setDetailsVisible] =
-    React.useState(false);
+  const [detailsVisible, setDetailsVisible] = React.useState(false);
 
-  // горизонтальное смещение карточки
   const translateX = useSharedValue(0);
 
-  const animatedCardStyle =
-    useAnimatedStyle(() => ({
-      transform: [
-        { translateX: translateX.value },
-      ],
-    }));
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
-  // прозрачность фоновых подсказок
-  const completeBackgroundStyle =
-    useAnimatedStyle(() => ({
-      opacity: interpolate(
-        translateX.value,
-        [0, SWIPE_ACTION_THRESHOLD],
-        [0, 1],
-        'clamp'
-      ),
-    }));
+  const completeBackgroundStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [0, SWIPE_ACTION_THRESHOLD],
+      [0, 1],
+      'clamp',
+    ),
+  }));
 
-  const deleteBackgroundStyle =
-    useAnimatedStyle(() => ({
-      opacity: interpolate(
-        translateX.value,
-        [-SWIPE_ACTION_THRESHOLD, 0],
-        [1, 0],
-        'clamp'
-      ),
-    }));
+  const deleteBackgroundStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [-SWIPE_ACTION_THRESHOLD, 0],
+      [1, 0],
+      'clamp',
+    ),
+  }));
 
-  // обычное переключение статуса
+  // Переключение статуса через сервер.
   const handleToggleStatus = () => {
-    statusAnimation.value = withSpring(
-      isCompleted ? 0 : 1
-    );
+    const nextStatus = isCompleted ? 'active' : 'completed';
 
-    toggleTaskStatus(task.id);
+    statusAnimation.value = withSpring(isCompleted ? 0 : 1);
+
+    updateMutation.mutate({
+      id: task.id,
+      input: { status: nextStatus },
+    });
   };
 
-  // действие после свайпа вправо
   const handleSwipeRight = () => {
     handleToggleStatus();
   };
 
-  // подтверждение удаления
+  // Удаление через сервер после подтверждения.
   const handleSwipeLeft = () => {
     Alert.alert(
       'Удалить задачу?',
@@ -138,40 +117,29 @@ export default function TaskCard({
         {
           text: 'Удалить',
           style: 'destructive',
-          onPress: () => removeTask(task.id),
+          onPress: () => deleteMutation.mutate(task.id),
         },
-      ]
+      ],
     );
   };
 
-  // жест свайпа
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .failOffsetY([-15, 15])
     .onUpdate((event) => {
       translateX.value = Math.max(
         -MAX_SWIPE_DISTANCE,
-        Math.min(
-          MAX_SWIPE_DISTANCE,
-          event.translationX
-        )
+        Math.min(MAX_SWIPE_DISTANCE, event.translationX),
       );
     })
     .onEnd((event) => {
-      if (
-        event.translationX >=
-        SWIPE_ACTION_THRESHOLD
-      ) {
+      if (event.translationX >= SWIPE_ACTION_THRESHOLD) {
         translateX.value = withSpring(0);
         runOnJS(handleSwipeRight)();
-      } else if (
-        event.translationX <=
-        -SWIPE_ACTION_THRESHOLD
-      ) {
+      } else if (event.translationX <= -SWIPE_ACTION_THRESHOLD) {
         translateX.value = withSpring(0);
         runOnJS(handleSwipeLeft)();
       } else {
-        // недостаточный свайп — вернуть карточку
         translateX.value = withSpring(0);
       }
     });
@@ -179,32 +147,32 @@ export default function TaskCard({
   const handleToggleDetails = () => {
     const newValue = detailsVisible ? 0 : 1;
 
-    detailsAnimation.value = withTiming(
-      newValue,
-      { duration: 250 }
-    );
+    detailsAnimation.value = withTiming(newValue, {
+      duration: 250,
+    });
 
     setDetailsVisible(!detailsVisible);
   };
 
+  const handleOpenTask = () => {
+    router.push({
+      pathname: '/task/[id]',
+      params: { id: task.id },
+    });
+  };
+
   return (
     <View style={styles.swipeContainer}>
-      {/* Фоновые области действий */}
-
       <Animated.View
         pointerEvents="none"
         style={[
           styles.actionBackground,
           styles.completeBackground,
-          {
-            backgroundColor: themeColors.primary,
-          },
+          { backgroundColor: themeColors.primary },
           completeBackgroundStyle,
         ]}
       >
-        <Text style={styles.actionText}>
-          ✓ Выполнить
-        </Text>
+        <Text style={styles.actionText}>✓ Выполнить</Text>
       </Animated.View>
 
       <Animated.View
@@ -212,28 +180,20 @@ export default function TaskCard({
         style={[
           styles.actionBackground,
           styles.deleteBackground,
-          {
-            backgroundColor: themeColors.error,
-          },
+          { backgroundColor: themeColors.error },
           deleteBackgroundStyle,
         ]}
       >
-        <Text style={styles.actionText}>
-          Удалить ✕
-        </Text>
+        <Text style={styles.actionText}>Удалить ✕</Text>
       </Animated.View>
-
-      {/* Двигающаяся карточка */}
 
       <GestureDetector gesture={panGesture}>
         <Animated.View
           style={[
             styles.card,
             {
-              backgroundColor:
-                themeColors.surface,
-              borderColor:
-                themeColors.border,
+              backgroundColor: themeColors.surface,
+              borderColor: themeColors.border,
             },
             isCompleted && styles.completedCard,
             animatedCardStyle,
@@ -244,8 +204,7 @@ export default function TaskCard({
               style={[
                 styles.title,
                 { color: themeColors.text },
-                isCompleted &&
-                  styles.completedTitle,
+                isCompleted && styles.completedTitle,
               ]}
             >
               {task.title}
@@ -254,10 +213,7 @@ export default function TaskCard({
             <Text
               style={[
                 styles.subject,
-                {
-                  color:
-                    themeColors.secondaryText,
-                },
+                { color: themeColors.secondaryText },
               ]}
             >
               {task.subject}
@@ -267,81 +223,52 @@ export default function TaskCard({
               <Text
                 style={[
                   styles.infoText,
-                  {
-                    color:
-                      themeColors.secondaryText,
-                  },
+                  { color: themeColors.secondaryText },
                 ]}
               >
-                Приоритет:{' '}
-                {getPriorityName(task.priority)}
+                Приоритет: {getPriorityName(task.priority)}
               </Text>
 
               <Animated.View
-                style={[
-                  styles.statusContainer,
-                  animatedStatusStyle,
-                ]}
+                style={[styles.statusContainer, animatedStatusStyle]}
               >
                 <Text
                   style={[
                     styles.infoText,
-                    {
-                      color:
-                        themeColors.secondaryText,
-                    },
+                    { color: themeColors.secondaryText },
                   ]}
                 >
-                  {isCompleted
-                    ? '✓ Выполнено'
-                    : 'В процессе'}
+                  {isCompleted ? '✓ Выполнено' : 'В процессе'}
                 </Text>
               </Animated.View>
             </View>
           </View>
 
-          {/* Раскрытие информации */}
-
           <TouchableOpacity
             style={[
               styles.detailsButton,
-              {
-                backgroundColor:
-                  themeColors.secondary,
-              },
+              { backgroundColor: themeColors.secondary },
             ]}
             onPress={handleToggleDetails}
           >
             <Text
               style={[
                 styles.buttonText,
-                {
-                  color: themeColors.onPrimary,
-                },
+                { color: themeColors.onPrimary },
               ]}
             >
-              {detailsVisible
-                ? 'Скрыть ▲'
-                : 'Подробнее ▼'}
+              {detailsVisible ? 'Скрыть ▲' : 'Подробнее ▼'}
             </Text>
           </TouchableOpacity>
 
           <Animated.View
-            pointerEvents={
-              detailsVisible ? 'auto' : 'none'
-            }
-            style={[
-              styles.detailsContainer,
-              animatedDetailsStyle,
-            ]}
+            pointerEvents={detailsVisible ? 'auto' : 'none'}
+            style={[styles.detailsContainer, animatedDetailsStyle]}
           >
             <View
               style={[
                 styles.detailsContent,
-                {
-                  borderTopColor:
-                    themeColors.border,
-                },
+                { borderTopColor: themeColors.border },
               ]}
             >
               <Text
@@ -356,10 +283,7 @@ export default function TaskCard({
               <Text
                 style={[
                   styles.detailsText,
-                  {
-                    color:
-                      themeColors.secondaryText,
-                  },
+                  { color: themeColors.secondaryText },
                 ]}
               >
                 Предмет: {task.subject}
@@ -368,53 +292,32 @@ export default function TaskCard({
               <Text
                 style={[
                   styles.detailsText,
-                  {
-                    color:
-                      themeColors.secondaryText,
-                  },
+                  { color: themeColors.secondaryText },
                 ]}
               >
-                Приоритет:{' '}
-                {getPriorityName(task.priority)}
+                Приоритет: {getPriorityName(task.priority)}
               </Text>
 
               <Text
                 style={[
                   styles.detailsText,
-                  {
-                    color:
-                      themeColors.secondaryText,
-                  },
+                  { color: themeColors.secondaryText },
                 ]}
               >
-                Статус:{' '}
-                {isCompleted
-                  ? 'Выполнено'
-                  : 'В процессе'}
+                Статус: {isCompleted ? 'Выполнено' : 'В процессе'}
               </Text>
 
               <TouchableOpacity
                 style={[
                   styles.editButton,
-                  {
-                    backgroundColor:
-                      themeColors.primary,
-                  },
+                  { backgroundColor: themeColors.primary },
                 ]}
-                onPress={() =>
-                  router.push({
-                    pathname: '/task/[id]',
-                    params: { id: task.id },
-                  })
-                }
+                onPress={handleOpenTask}
               >
                 <Text
                   style={[
                     styles.buttonText,
-                    {
-                      color:
-                        themeColors.onPrimary,
-                    },
+                    { color: themeColors.onPrimary },
                   ]}
                 >
                   Открыть задачу
@@ -423,41 +326,29 @@ export default function TaskCard({
             </View>
           </Animated.View>
 
-          {/* Кнопки остаются доступными */}
-
           <View style={styles.buttons}>
             <TouchableOpacity
               style={[
                 styles.button,
-                {
-                  backgroundColor:
-                    themeColors.primary,
-                },
+                { backgroundColor: themeColors.primary },
               ]}
               onPress={handleToggleStatus}
+              disabled={updateMutation.isPending}
             >
               <Text
                 style={[
                   styles.buttonText,
-                  {
-                    color:
-                      themeColors.onPrimary,
-                  },
+                  { color: themeColors.onPrimary },
                 ]}
               >
-                {isCompleted
-                  ? '↩ Вернуть'
-                  : '✓ Выполнить'}
+                {isCompleted ? '↩ Вернуть' : '✓ Выполнить'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.button,
-                {
-                  backgroundColor:
-                    themeColors.secondary,
-                },
+                { backgroundColor: themeColors.secondary },
               ]}
               onPress={() =>
                 Alert.alert(
@@ -471,20 +362,17 @@ export default function TaskCard({
                     {
                       text: 'Удалить',
                       style: 'destructive',
-                      onPress: () =>
-                        removeTask(task.id),
+                      onPress: () => deleteMutation.mutate(task.id),
                     },
-                  ]
+                  ],
                 )
               }
+              disabled={deleteMutation.isPending}
             >
               <Text
                 style={[
                   styles.buttonText,
-                  {
-                    color:
-                      themeColors.onPrimary,
-                  },
+                  { color: themeColors.onPrimary },
                 ]}
               >
                 Удалить
@@ -497,9 +385,7 @@ export default function TaskCard({
   );
 }
 
-function getPriorityName(
-  priority: Task['priority']
-) {
+function getPriorityName(priority: Task['priority']) {
   switch (priority) {
     case 'low':
       return 'Низкий';
@@ -515,7 +401,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: spacing.sm,
   },
-
   actionBackground: {
     position: 'absolute',
     top: 0,
@@ -525,109 +410,88 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-
   completeBackground: {
     alignItems: 'flex-start',
   },
-
   deleteBackground: {
     alignItems: 'flex-end',
   },
-
   actionText: {
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 14,
   },
-
   card: {
     borderWidth: 1,
     padding: spacing.md,
     marginBottom: 0,
   },
-
   completedCard: {
     opacity: 0.5,
   },
-
   content: {
     marginBottom: spacing.sm,
   },
-
   title: {
     fontSize: 17,
     fontWeight: 'bold',
     marginBottom: spacing.xs,
   },
-
   completedTitle: {
     textDecorationLine: 'line-through',
   },
-
   subject: {
     fontSize: 14,
     marginBottom: spacing.sm,
   },
-
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
   },
-
   statusContainer: {
     alignItems: 'center',
   },
-
   infoText: {
     fontSize: 13,
   },
-
   detailsButton: {
     padding: spacing.sm,
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
-
   detailsContainer: {
     overflow: 'hidden',
   },
-
   detailsContent: {
     borderTopWidth: 1,
     paddingTop: spacing.sm,
     marginTop: spacing.xs,
     marginBottom: spacing.sm,
   },
-
   detailsTitle: {
     fontSize: 15,
     fontWeight: 'bold',
     marginBottom: spacing.xs,
   },
-
   detailsText: {
     fontSize: 13,
     marginBottom: 4,
   },
-
   editButton: {
     padding: spacing.sm,
     alignItems: 'center',
     marginTop: spacing.sm,
   },
-
   buttons: {
     flexDirection: 'row',
     gap: spacing.xs,
   },
-
   button: {
     flex: 1,
     padding: spacing.sm,
     alignItems: 'center',
   },
-
   buttonText: {
     fontSize: 13,
   },

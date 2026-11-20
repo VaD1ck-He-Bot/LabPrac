@@ -1,85 +1,57 @@
-import { Stack, router } from 'expo-router';
-import {
-  Text,
-  TouchableOpacity,
-} from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { TasksProvider } from '../src/context/TaskContext';
+import { Stack } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
-  ThemeProvider,
-  useTheme,
-} from '../src/context/ThemeContext';
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
+
+import { AuthProvider, useAuth } from '../src/auth/AuthContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
+
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <TasksProvider>
-          <AppStack />
-        </TasksProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemeProvider>
+            <AppNavigator />
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </GestureHandlerRootView>
   );
 }
 
-function AppStack() {
-  const { theme } = useTheme();
+function AppNavigator() {
+  const { isLoading, isAuthenticated } = useAuth();
 
-  const isDark = theme === 'dark';
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: isDark ? '#333' : '#fff',
-        },
-        headerTintColor: isDark ? '#fff' : '#000',
-        headerTitleStyle: {
-          color: isDark ? '#fff' : '#000',
-        },
-      }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: 'Campus Planner',
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push('/settings')}
-            >
-              <Text
-                style={{
-                  fontSize: 28,
-                  color: isDark ? '#fff' : '#000',
-                }}
-              >
-                ⋮
-              </Text>
-            </TouchableOpacity>
-          ),
-        }}
-      />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
 
-      <Stack.Screen
-        name="task/new"
-        options={{ title: 'Новая задача' }}
-      />
-
-      <Stack.Screen
-        name="task/[id]"
-        options={{ title: 'Задача' }}
-      />
-
-      <Stack.Screen
-        name="task/edit/[id]"
-        options={{ title: 'Редактирование' }}
-      />
-
-      <Stack.Screen
-        name="settings"
-        options={{ title: 'Настройки' }}
-      />
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
     </Stack>
   );
 }
